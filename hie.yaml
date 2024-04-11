@@ -1,0 +1,12 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:Hexdim"
+    - path: "./tests/doctests.hs"
+      component: "Hexdim:doctests"
+    - path: "./tests"
+      component: "Hexdim:test-library"
+    - path: "./bin/Clashi.hs"
+      component: "Hexdim:exe:clashi"
+    - path: "./bin/Clash.hs"
+      component: "Hexdim:exe:clash"
