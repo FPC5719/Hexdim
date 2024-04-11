@@ -85,7 +85,7 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Example.Project
+    Hexdim.Prim
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with Hexdim project in scope
@@ -103,32 +103,3 @@ executable clashi
   if !os(Windows)
     ghc-options: -dynamic
   build-depends: base, clash-ghc, Hexdim
-
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  default-language: Haskell2010
-  main-is:          doctests.hs
-  ghc-options:      -Wall -Wcompat -threaded
-  hs-source-dirs:   tests
-  build-depends:
-    base,
-    Hexdim,
-    doctest-parallel >= 0.2 && < 0.4,
-
-test-suite test-library
-  import: common-options
-  default-language: Haskell2010
-  hs-source-dirs: tests
-  type: exitcode-stdio-1.0
-  ghc-options: -threaded
-  main-is: unittests.hs
-  other-modules:
-    Tests.Example.Project
-  build-depends:
-    Hexdim,
-    QuickCheck,
-    clash-prelude-hedgehog,
-    hedgehog,
-    tasty >= 1.2 && < 1.5,
-    tasty-hedgehog,
-    tasty-th
