@@ -7,11 +7,14 @@ import Clash.Prelude
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.Extra
 import Control.Monad.RWS
 import Data.Monoid.Generic
 import Data.Maybe
 
 type Wire = Unsigned 8
+type Reg = Unsigned 2
+type Imm = Unsigned 4
 
 data PipeR = PipeR
   { _cycle0       :: Bool
@@ -44,6 +47,47 @@ data PipeW = PipeW
   deriving Monoid via GenericMonoid PipeW
 makeLenses ''PipeW
 
+data OpMA -- Address Data
+  = IORead   Wire
+  | IOWrite  Wire    Wire
+  | MemRead  Wire
+  | MemWrite Wire    Wire
+  | MANop
+  deriving stock (Generic, Eq, Show)
+  deriving anyclass (NFDataX)
+
+data OpEX -- Reg1 Reg2
+  = ALUAdd   Wire Wire
+  | ALUNand  Wire Wire
+  | ALUXor   Wire Wire
+  | ALUFlip  Wire
+  | ALUComp  Wire
+  | ALUShr   Wire
+  | ALUSend  Wire
+  | JMP      Wire
+  | JZ       Wire
+  | JO       Wire
+  | EXNop
+  deriving stock (Generic, Eq, Show)
+  deriving anyclass (NFDataX)
+
+data OpWB
+  = WBImm Reg
+  | WBMA  Reg
+  | WBEX  Reg
+  | WBNop
+  deriving stock (Generic, Eq, Show)
+  deriving anyclass (NFDataX)
+
+data Instruction = Instruction
+  { _imm :: Imm
+  , _opMA :: OpMA
+  , _opEX :: OpEX
+  , _opWB :: OpWB }
+  deriving stock (Generic, Eq, Show)
+  deriving anyclass (NFDataX)
+makeLenses ''Instruction
+
 data StageIFS = StageIFS
   { _pc :: Wire }
   deriving stock (Generic, Eq, Show)
@@ -63,9 +107,9 @@ makeLenses ''StageEXS
 
 type StageWBS = ()
 
-type StoreIFID = ()
+type StoreIFID = Wire
 
-type StoreIDMA = ()
+type StoreIDMA = Instruction
 
 type StoreMAEX = ()
 
@@ -95,7 +139,7 @@ initState = PipeS
     { _isZero = False
     , _isOverflow = False }
   , _stageWBS = ()
-  , _storeIFID = ()
+  , _storeIFID = 0
   , _storeIDMA = ()
   , _storeMAEX = ()
   , _storeEXWB = () }
@@ -103,10 +147,33 @@ initState = PipeS
 type Pipe s m a = RWST PipeR PipeW s m a
 
 stageIF :: Monad m => () -> Pipe StageIFS m StoreIFID
-stageIF = undefined
+stageIF () = do
+  curpc <- use pc
+  scribe addrInstrMem curpc
+  pc %= (+ 1)
+  ifM (view cycle0) (return 0) $ (view fromInstrMem)
 
 stageID :: Monad m => StoreIFID -> Pipe StageIDS m StoreIDMA
-stageID = undefined
+stageID = \case
+  $(bitPattern "00__00__") -> undefined
+  $(bitPattern "00rr01ss") -> undefined
+  $(bitPattern "00rr10ss") -> undefined
+  $(bitPattern "00rr11ss") -> undefined
+  
+  $(bitPattern "01rr00ss") -> undefined
+  $(bitPattern "01rr01ss") -> undefined
+  $(bitPattern "01rr10ss") -> undefined
+  $(bitPattern "01rr11ss") -> undefined
+  
+  $(bitPattern "10rrmmmm") -> undefined
+  
+  $(bitPattern "11rr00ss") -> undefined
+  $(bitPattern "11rr01ss") -> undefined
+  $(bitPattern "11rr10ss") -> undefined
+  $(bitPattern "11rr1100") -> undefined
+  $(bitPattern "11rr1101") -> undefined
+  $(bitPattern "11rr1110") -> undefined
+  $(bitPattern "11rr1111") -> undefined
 
 stageMA :: Monad m => StoreIDMA -> Pipe StageMAS m StoreMAEX
 stageMA = undefined
