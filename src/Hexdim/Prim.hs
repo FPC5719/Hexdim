@@ -59,7 +59,7 @@ data StageEXS = StageEXS
   , _isOverflow :: Bool }
   deriving stock (Generic, Eq, Show)
   deriving anyclass (NFDataX)
-makeLenses ''StageIFS
+makeLenses ''StageEXS
 
 type StageWBS = ()
 
@@ -102,30 +102,30 @@ initState = PipeS
 
 type Pipe s m a = RWST PipeR PipeW s m a
 
-stageIF :: () -> Pipe StageIFS m StoreIFID
+stageIF :: Monad m => () -> Pipe StageIFS m StoreIFID
 stageIF = undefined
 
-stageID :: StoreIFID -> Pipe StageIDS m StoreIDMA
+stageID :: Monad m => StoreIFID -> Pipe StageIDS m StoreIDMA
 stageID = undefined
 
-stageMA :: StoreIDMA -> Pipe StageMAS m StoreMAEX
+stageMA :: Monad m => StoreIDMA -> Pipe StageMAS m StoreMAEX
 stageMA = undefined
 
-stageEX :: StoreMAEX -> Pipe StageEXS m StoreEXWB
+stageEX :: Monad m => StoreMAEX -> Pipe StageEXS m StoreEXWB
 stageEX = undefined
 
-stageWB :: StoreEXWB -> Pipe StageWBS m ()
+stageWB :: Monad m => StoreEXWB -> Pipe StageWBS m ()
 stageWB = undefined
 
-store :: a -> Pipe a m a
+store :: Monad m => a -> Pipe a m a
 store x = get >>= \x0 -> put x >> return x0
 
-pipeM :: Pipe PipeS m ()
-pipeM =                        zoom stageIFS stageIF
-  >=> zoom storeIFID store >=> zoom stageIDS stageID
-  >=> zoom storeIDMA store >=> zoom stageMAS stageMA
-  >=> zoom storeMAEX store >=> zoom stageEXS stageEX
-  >=> zoom storeEXWB store >=> zoom stageWBS stageWB
+pipeM :: Monad m => () -> Pipe PipeS m ()
+pipeM =                            (zoom stageIFS . stageIF)
+  >=> (zoom storeIFID . store) >=> (zoom stageIDS . stageID)
+  >=> (zoom storeIDMA . store) >=> (zoom stageMAS . stageMA)
+  >=> (zoom storeMAEX . store) >=> (zoom stageEXS . stageEX)
+  >=> (zoom storeEXWB . store) >=> (zoom stageWBS . stageWB)
 
 -- Miscellaneous
 fromFirst :: a -> First a -> a
