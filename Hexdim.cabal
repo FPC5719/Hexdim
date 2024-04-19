@@ -82,6 +82,7 @@ common common-options
 
     lens,
     mtl,
+    extra,
     generic-monoid
 
 

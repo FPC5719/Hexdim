@@ -37,9 +37,9 @@ data PipeW = PipeW
   , _addrIO       :: First Wire
   , _toIO         :: First (Maybe Wire)
 
-  , _selRegs1     :: First Wire
-  , _selRegs2     :: First Wire
-  , _selRegs      :: First Wire
+  , _selRegs1     :: First Reg
+  , _selRegs2     :: First Reg
+  , _selRegs      :: First Reg
   , _toRegs       :: First (Maybe Wire) }
   deriving stock (Generic, Eq, Show)
   deriving anyclass (NFDataX)
@@ -140,7 +140,11 @@ initState = PipeS
     , _isOverflow = False }
   , _stageWBS = ()
   , _storeIFID = 0
-  , _storeIDMA = ()
+  , _storeIDMA = Instruction
+    { _imm = 0
+    , _opMA = MANop
+    , _opEX = EXNop
+    , _opWB = WBNop }
   , _storeMAEX = ()
   , _storeEXWB = () }
 
@@ -149,31 +153,77 @@ type Pipe s m a = RWST PipeR PipeW s m a
 stageIF :: Monad m => () -> Pipe StageIFS m StoreIFID
 stageIF () = do
   curpc <- use pc
-  scribe addrInstrMem curpc
+  scribe addrInstrMem (pure curpc)
   pc %= (+ 1)
   ifM (view cycle0) (return 0) $ (view fromInstrMem)
 
 stageID :: Monad m => StoreIFID -> Pipe StageIDS m StoreIDMA
 stageID = \case
-  $(bitPattern "00__00__") -> undefined
-  $(bitPattern "00rr01ss") -> undefined
-  $(bitPattern "00rr10ss") -> undefined
-  $(bitPattern "00rr11ss") -> undefined
-  
-  $(bitPattern "01rr00ss") -> undefined
-  $(bitPattern "01rr01ss") -> undefined
-  $(bitPattern "01rr10ss") -> undefined
-  $(bitPattern "01rr11ss") -> undefined
-  
-  $(bitPattern "10rrmmmm") -> undefined
-  
-  $(bitPattern "11rr00ss") -> undefined
-  $(bitPattern "11rr01ss") -> undefined
-  $(bitPattern "11rr10ss") -> undefined
-  $(bitPattern "11rr1100") -> undefined
-  $(bitPattern "11rr1101") -> undefined
-  $(bitPattern "11rr1110") -> undefined
-  $(bitPattern "11rr1111") -> undefined
+  -- NOP
+  $(bitPattern "00__00__") -> return Instruction
+    { _imm = 0, _opMA = MANop, _opEX = EXNop, _opWB = WBNop }
+  -- JMP JZ JO
+  $(bitPattern "00rr01__") -> unOP rr (const MANop) JMP (const WBNop)
+  $(bitPattern "00rr10__") -> unOP rr (const MANop) JZ (const WBNop)
+  $(bitPattern "00rr11__") -> unOP rr (const MANop) JO (const WBNop)
+  -- STR LOAD OUT IN
+  $(bitPattern "01rr00ss") ->
+    biOP rr ss (flip MemWrite) (const2 EXNop) (const WBNop)
+  $(bitPattern "01rr01ss") ->
+    biOP rr ss (const MemRead) (const2 EXNop) WBMA
+  $(bitPattern "01rr10ss") ->
+    biOP rr ss (flip IOWrite) (const2 EXNop) (const WBNop)
+  $(bitPattern "01rr11ss") ->
+    biOP rr ss (const IORead) (const2 EXNop) WBMA
+  -- SETL
+  $(bitPattern "10rrmmmm") -> return Instruction
+    { _imm = (bitCoerce mmmm)
+    , _opMA = MANop
+    , _opEX = EXNop
+    , _opWB = WBImm (bitCoerce rr) }
+  -- ADD NAND XOR FLIP COMP SHR SEND
+  $(bitPattern "11rr00ss") -> biOP rr ss (const2 MANop) ALUAdd WBEX
+  $(bitPattern "11rr01ss") -> biOP rr ss (const2 MANop) ALUNand WBEX
+  $(bitPattern "11rr10ss") -> biOP rr ss (const2 MANop) ALUXor WBEX
+  $(bitPattern "11rr1100") -> unOP rr (const MANop) ALUFlip WBEX
+  $(bitPattern "11rr1101") -> unOP rr (const MANop) ALUComp WBEX
+  $(bitPattern "11rr1110") -> unOP rr (const MANop) ALUShr WBEX
+  $(bitPattern "11rr1111") -> unOP rr (const MANop) ALUSend WBEX
+  -- Should not happen, only to dismiss the non-exhaustive warning
+  _ -> return Instruction
+    { _imm = 0, _opMA = MANop, _opEX = EXNop, _opWB = WBNop }
+  where
+    const2 :: x -> a -> b -> x
+    const2 = const . const
+    
+    unOP :: Monad m => BitVector 2
+         -> (Wire -> OpMA) -> (Wire -> OpEX)
+         -> (Reg -> OpWB) -> Pipe StageIDS m Instruction
+    unOP rr fma fex fwb = do
+      let r = bitCoerce rr
+      scribe selRegs1 (pure r)
+      regs1 <- view fromRegs1
+      return Instruction
+        { _imm = 0
+        , _opMA = fma regs1
+        , _opEX = fex regs1
+        , _opWB = fwb r }
+
+    biOP :: Monad m => BitVector 2 -> BitVector 2
+         -> (Wire -> Wire -> OpMA) -> (Wire -> Wire -> OpEX)
+         -> (Reg -> OpWB) -> Pipe StageIDS m Instruction
+    biOP rr ss fma fex fwb = do
+      let r1 = bitCoerce rr
+          r2 = bitCoerce ss
+      scribe selRegs1 (pure r1)
+      scribe selRegs2 (pure r2)
+      regs1 <- view fromRegs1
+      regs2 <- view fromRegs2
+      return Instruction
+        { _imm = 0
+        , _opMA = fma regs1 regs2
+        , _opEX = fex regs1 regs2
+        , _opWB = fwb r1 }
 
 stageMA :: Monad m => StoreIDMA -> Pipe StageMAS m StoreMAEX
 stageMA = undefined
