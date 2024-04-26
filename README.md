@@ -2,10 +2,14 @@
 
 Hexdim (HEXDeci-Instruction Machine) is an 8-bit CPU built in Haskell-Clash.
 
+The project mainly focuses on the Design Strategies and Infrastructures,
+instead of the CPU core itself.
+
 Features (Not implemented yet):
 
 - Simple enough to implement, while complex enough to perform several tasks.
-- 5-stage pipeline, easily composable in monadic style.
+- Staged pipeline, easily composable in monadic style.
+- Hierarchical code structure, separated by functions instead of stages.
 - Extensive use of `Lens`.
 - Code reuse with different compiler backends: GHC and Clash.
 - Easy DiffTest.
@@ -32,7 +36,7 @@ cabal run clash -- Hexdim.Circ --verilog
 
 ## Design details
 
-Below is the table of all 16 instructions:
+### Instructions
 
 | Op   | Description                         | 7-6 | 5-4 | 3-2 | 1-0 |
 |------|-------------------------------------|-----|-----|-----|-----|
@@ -53,3 +57,19 @@ Below is the table of all 16 instructions:
 | SHR  | R1 = R1 >> 1 (Overflow)             | 11  | R1  | 11  | 10  |
 | SEND | R1 = R1                             | 11  | R1  | 11  | 11  |
 
+### Pipeline Structure
+
+```
+Stage1  Stage2  Stage3 
+Fetch   Branch         
+        Memory  MemoryW
+	Immed          
+	Arith   AtirhW 
+```
+
+```Haskell
+pipeM = fetch +>> branch
+              *>> (memory +>> memoryW)
+              *>> immed
+              *>> (arith +>> arithW)
+```
