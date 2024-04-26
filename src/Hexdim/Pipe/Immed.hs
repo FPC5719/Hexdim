@@ -1,9 +1,13 @@
 module Hexdim.Pipe.Immed where
 
-import Prelude
-import Control.Monad
+import Clash.Prelude
+import Control.Lens
 
 import Hexdim.Pipe.Data
 
 immed :: Monad m => Wire -> Pipe () m ()
-immed = undefined
+immed = \case
+  $(bitPattern "10rrmmmm") -> do
+    scribe regSW $ pure (Just rr)
+    scribe regW $ pure (Just (bitCoerce (0 ++# mmmm)))
+  _ -> return ()
