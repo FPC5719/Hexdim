@@ -11,6 +11,7 @@ import Data.Monoid.Generic
 type Wire = Unsigned 8
 type Addr = Unsigned 8
 type Reg  = Unsigned 2
+type Imm  = Unsigned 4
 
 data PipeR = PipeR
   { _cycle0 :: Bool
