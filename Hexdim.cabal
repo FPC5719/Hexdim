@@ -83,7 +83,9 @@ common common-options
     lens,
     mtl,
     extra,
-    generic-monoid
+    array,
+    generic-monoid,
+    data-default
 
 
 library
@@ -97,7 +99,8 @@ library
     Hexdim.Pipe.Branch,
     Hexdim.Pipe.Memory,
     Hexdim.Pipe.Immed,
-    Hexdim.Pipe.Arith
+    Hexdim.Pipe.Arith,
+    Hexdim.Emu
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with Hexdim project in scope

@@ -10,10 +10,22 @@ import Hexdim.Pipe.Memory
 import Hexdim.Pipe.Immed
 import Hexdim.Pipe.Arith
 
-pipeM :: Monad m => () -> Pipe
-  (Wire, ((), ((MemInstr, ()), ((), (ArithInstr, ())))))
-  m ()
+pipeM :: Monad m => () -> Pipe PipeState m ()
 pipeM = fetch +>> branch
               *>> (memory +>> memoryW)
               *>> immed
               *>> (arith +>> arithW)
+
+-- How to reduce the boilerplate?
+type PipeState =
+  (Wire, ((), ((MemInstr, ()), ((), (ArithInstr, ())))))
+
+zipPipeState :: PipeState
+             -> (Wire, MemInstr, ArithInstr)
+zipPipeState (w, ((), ((m, ()), ((), (a, ()))))) =
+  (w, m, a)
+
+unzipPipeState :: (Wire, MemInstr, ArithInstr)
+               -> PipeState
+unzipPipeState (w, m, a) =
+  (w, ((), ((m, ()), ((), (a, ())))))

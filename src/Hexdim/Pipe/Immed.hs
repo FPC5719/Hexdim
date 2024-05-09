@@ -7,7 +7,7 @@ import Hexdim.Pipe.Data
 
 immed :: Monad m => Wire -> Pipe () m ()
 immed = \case
-  $(bitPattern "10rrmmmm") -> do
-    scribe regSW $ pure (Just rr)
-    scribe regW $ pure (Just (bitCoerce (0 ++# mmmm)))
+  $(bitPattern "10rrmmmm") ->
+    scribe regW . pure $
+      Just (bitCoerce rr, bitCoerce (0 ++# mmmm))
   _ -> return ()

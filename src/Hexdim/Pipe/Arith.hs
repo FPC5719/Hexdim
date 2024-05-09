@@ -4,7 +4,7 @@ module Hexdim.Pipe.Arith
 
 import Clash.Prelude
 import Control.Lens
-import Data.Bits()
+import Data.Bits ()
 
 import Hexdim.Pipe.Data
 
@@ -18,13 +18,18 @@ data ArithInstr
   | ArShr  Reg Wire
   | ArSend Reg Wire
 
+instance Default ArithInstr where
+  def = ArNop
+
 arith :: Monad m => Wire -> Pipe () m ArithInstr
 arith = \case
   $(bitPattern "11rrllss") -> do
-    scribe regS1 $ pure rr
-    scribe regS2 $ pure ss
-    let biop f = f rr <$> view regR1 <*> view regR2
-        unop f = f rr <$> view regR1
+    let rr' = bitCoerce rr :: Reg
+        ss' = bitCoerce ss :: Reg
+    scribe regS1 $ pure rr'
+    scribe regS2 $ pure ss'
+    let biop f = f rr' <$> view regR1 <*> view regR2
+        unop f = f rr' <$> view regR1
     case ll of
       0b00 -> biop ArAdd
       0b01 -> biop ArNand
@@ -46,8 +51,7 @@ arithW = \case
     scribe statusW . pure . Just $
       ( popCount (clearBit ans 9) == 0
       , testBit ans 9 )
-    scribe regSW . pure . Just $ d
-    scribe regW . pure . Just $ truncateB ans
+    scribe regW . pure . Just $ (d, truncateB ans)
   ArNand d r1 r2 ->
     common d $ complement (r1 .&. r2)
   ArXor d r1 r2 ->
@@ -61,15 +65,13 @@ arithW = \case
     scribe statusW . pure . Just $
       ( popCount (clearBit ans 9) == 0
       , testBit ans 9 )
-    scribe regSW . pure . Just $ d
-    scribe regW . pure . Just $ truncateB ans
+    scribe regW . pure . Just $ (d, truncateB ans)
   ArShr d r -> do
     let ans = shiftR r 1
     scribe statusW . pure . Just $
       ( popCount ans == 0
       , testBit r 0 )
-    scribe regSW . pure . Just $ d
-    scribe regW . pure . Just $ ans
+    scribe regW . pure . Just $ (d, ans)
   ArSend d r ->
     common d r
 
@@ -77,5 +79,4 @@ common :: Monad m => Reg -> Wire -> Pipe () m ()
 common d ans = do
   scribe statusW . pure . Just $
     ( popCount ans == 0, False )
-  scribe regSW . pure . Just $ d
-  scribe regW . pure . Just $ ans
+  scribe regW . pure . Just $ (d, ans)
