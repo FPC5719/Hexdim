@@ -3,7 +3,7 @@ module Hexdim.Pipe.Arith
   ) where
 
 import Clash.Prelude
-import Control.Lens
+import Control.Lensp
 import Data.Bits ()
 
 import Hexdim.Pipe.Data

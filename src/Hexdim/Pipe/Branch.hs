@@ -6,4 +6,4 @@ import Control.Monad
 import Hexdim.Pipe.Data
 
 branch :: Monad m => Wire -> Pipe () m ()
-branch = undefined
+branch _ = return ()

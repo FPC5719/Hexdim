@@ -6,13 +6,15 @@ import Data.Default
 
 import Hexdim.Pipe.Data
 
-data MemInstr = MemNop
+data MemInstr
+  = MemNop
+  deriving (Show, Eq)
 
 instance Default MemInstr where
   def = MemNop
 
-memory :: Wire -> Pipe () m MemInstr
-memory = undefined
+memory :: Monad m => Wire -> Pipe () m MemInstr
+memory _ = return MemNop
 
-memoryW :: MemInstr -> Pipe () m ()
-memoryW = undefined
+memoryW :: Monad m => MemInstr -> Pipe () m ()
+memoryW _ = return ()
