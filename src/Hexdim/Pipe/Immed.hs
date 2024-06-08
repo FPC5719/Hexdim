@@ -5,9 +5,12 @@ import Control.Lens
 
 import Hexdim.Pipe.Data
 
-immed :: Monad m => Wire -> Pipe () m ()
+immed :: Monad m => Wire -> Pipe StageID () m ()
 immed = \case
   $(bitPattern "10rrmmmm") ->
     scribe regW . pure $
-      Just (bitCoerce rr, bitCoerce (0 ++# mmmm))
+      (bitCoerce rr, bitCoerce (0 ++# mmmm))
   _ -> return ()
+
+immedW :: Monad m => () -> Pipe StageEX () m ()
+immedW = pure

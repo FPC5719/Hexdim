@@ -2,10 +2,12 @@ module Hexdim.Emu where
 
 import Prelude
 
-import Control.Monad.RWS
+import Control.Monad.RWS.Lazy
 import Control.Lens
 import Data.Array
 import Data.Maybe
+import Data.List (minimumBy)
+import Data.Function
 import Data.Functor
 import Data.Default
 
@@ -37,14 +39,14 @@ instance Default Env where
 emulate :: Env -> IO Env
 emulate e = do
   let lastW = fromMaybe
-        PipeW { _pcNext    = First Nothing
-              , _instrMemA = First Nothing
-              , _dataMemW  = First Nothing
-              , _ioW       = First Nothing
-              , _regS1     = First Nothing
-              , _regS2     = First Nothing
-              , _regW      = First Nothing
-              , _statusW   = First Nothing
+        PipeW { _pcNext    = mempty
+              , _instrMemA = mempty
+              , _dataMemW  = mempty
+              , _ioW       = mempty
+              , _regS1     = mempty
+              , _regS2     = mempty
+              , _regW      = mempty
+              , _statusW   = mempty
               }
         (e ^. lastPipeW)
   let lw :: Lens' PipeW (First a) -> Maybe a
@@ -57,23 +59,32 @@ emulate e = do
       putStrLn $ "Reading IO[" ++ show addr ++ "]"
       read <$> getLine
   
-  ((), s', w) <- runRWST (pipeM ())
-    PipeR { _cycle0 = False
-          , _pc = e ^. envPC
-          , _instrMemR = maybe 0 ((e ^. instrMem) !) $ lw instrMemA
-          , _dataMemR = case lw dataMemW of
-              Nothing -> Nothing
-              Just (Right _) -> Nothing
-              Just (Left addr) -> Just $ (e ^. dataMem) ! addr
-          , _ioR = case lw ioW of
-              Nothing -> Nothing
-              Just (Right _) -> Nothing
-              Just (Left _) -> Just $ ioRes
-          , _regR1 = maybe 0 ((e ^. envReg) !) $ lw regS1
-          , _regR2 = maybe 0 ((e ^. envReg) !) $ lw regS2
-          , _statusR = e ^. status
-          }
-    (e ^. pipeState)
+  ((), s', w) <- mfix $ \ ~(_, _, w) -> do
+    let mw :: Lens' PipeW (First a) -> Maybe a
+        mw l = getFirst $ w ^. l
+    let reg' = (e ^. envReg) //
+          ( case w ^. regW of
+              [] -> []
+              xs -> [snd . minimumBy (compare `on` fst) $ xs]
+          )
+    ((), s', w') <- runRWST (pipeM ())
+      PipeR { _cycle0 = False
+            , _pc = e ^. envPC
+            , _instrMemR = maybe 0 ((e ^. instrMem) !) $ lw instrMemA
+            , _dataMemR = case lw dataMemW of
+                Nothing -> Nothing
+                Just (Right _) -> Nothing
+                Just (Left addr) -> Just $ (e ^. dataMem) ! addr
+            , _ioR = case lw ioW of
+                Nothing -> Nothing
+                Just (Right _) -> Nothing
+                Just (Left _) -> Just $ ioRes
+            , _regR1 = maybe 0 (reg' !) $ mw regS1
+            , _regR2 = maybe 0 (reg' !) $ mw regS2
+            , _statusR = e ^. status
+            }
+      (e ^. pipeState)
+    return ((), s', w')
 
   case lw ioW of
     Nothing -> return ()
@@ -96,6 +107,10 @@ emulate e = do
           Just (Left _) -> []
           Just (Right upd) -> [upd]
       )
-    , _envReg = (e ^. envReg) // (maybeToList $ join (nw regW))
+    , _envReg = (e ^. envReg) //
+      ( case w ^. regW of
+          [] -> []
+          xs -> [snd . minimumBy (compare `on` fst) $ xs]
+      )
     , _status = fromMaybe (e ^. status) (join $ nw statusW)
     }

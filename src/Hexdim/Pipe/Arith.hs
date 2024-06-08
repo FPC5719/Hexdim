@@ -22,7 +22,7 @@ data ArithInstr
 instance Default ArithInstr where
   def = ArNop
 
-arith :: Monad m => Wire -> Pipe () m ArithInstr
+arith :: Monad m => Wire -> Pipe StageID () m ArithInstr
 arith = \case
   $(bitPattern "11rrllss") -> do
     let rr' = bitCoerce rr :: Reg
@@ -42,15 +42,15 @@ arith = \case
       _ -> return ArNop
   _ -> return ArNop
 
-arithW :: Monad m => ArithInstr -> Pipe () m ()
+arithW :: Monad m => ArithInstr -> Pipe StageEX () m ()
 arithW = \case
   ArNop -> return ()
   ArAdd d -> biop $ \(r1, r2) -> do
     let ans = zeroExtend r1 + zeroExtend r2 :: Unsigned 9
-    scribe statusW . pure . Just $
+    scribe statusW . pure $
       ( popCount (clearBit ans 9) == 0
       , testBit ans 9 )
-    scribe regW . pure . Just $ (d, truncateB ans)
+    scribeR (d, truncateB ans)
   ArNand d -> biop $ \(r1, r2) ->
     common d $ complement (r1 .&. r2)
   ArXor d -> biop $ \(r1, r2) ->
@@ -61,27 +61,30 @@ arithW = \case
     _ -> return ()
   ArComp d -> unop $ \r -> do
     let ans = zeroExtend (complement r) + 1 :: Unsigned 9
-    scribe statusW . pure . Just $
+    scribe statusW . pure $
       ( popCount (clearBit ans 9) == 0
       , testBit ans 9 )
-    scribe regW . pure . Just $ (d, truncateB ans)
+    scribeR (d, truncateB ans)
   ArShr d -> unop $ \r -> do
     let ans = shiftR r 1
-    scribe statusW . pure . Just $
+    scribe statusW . pure $
       ( popCount ans == 0
       , testBit r 0 )
-    scribe regW . pure . Just $ (d, ans)
+    scribeR (d, ans)
   ArSend d -> unop $ \r ->
     common d r
 
-common :: Monad m => Reg -> Wire -> Pipe () m ()
+common :: Monad m => Reg -> Wire -> Pipe StageEX () m ()
 common d ans = do
-  scribe statusW . pure . Just $
+  scribe statusW . pure $
     ( popCount ans == 0, False )
-  scribe regW . pure . Just $ (d, ans)
+  scribeR (d, ans)
 
-unop :: Monad m => (Wire -> Pipe () m ()) -> Pipe () m ()
+scribeR :: Monad m => (Reg, Wire) -> Pipe StageEX () m ()
+scribeR (d, ans) = scribe regW . pure $ (d, ans)
+
+unop :: Monad m => (Wire -> Pipe StageEX () m ()) -> Pipe StageEX () m ()
 unop f = view regR1 >>= f
 
-biop :: Monad m => ((Wire, Wire) -> Pipe () m ()) -> Pipe () m ()
+biop :: Monad m => ((Wire, Wire) -> Pipe StageEX () m ()) -> Pipe StageEX () m ()
 biop f = ((,) <$> view regR1 <*> view regR2) >>= f

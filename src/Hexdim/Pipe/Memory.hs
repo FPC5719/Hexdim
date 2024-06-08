@@ -13,8 +13,8 @@ data MemInstr
 instance Default MemInstr where
   def = MemNop
 
-memory :: Monad m => Wire -> Pipe () m MemInstr
+memory :: Monad m => Wire -> Pipe StageID () m MemInstr
 memory _ = return MemNop
 
-memoryW :: Monad m => MemInstr -> Pipe () m ()
+memoryW :: Monad m => MemInstr -> Pipe StageEX () m ()
 memoryW _ = return ()
