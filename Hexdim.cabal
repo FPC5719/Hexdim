@@ -92,16 +92,9 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Hexdim.Prim,
-    Hexdim.Emu,
-    Hexdim.Dsl,
-    Hexdim.Aux.Pipe,
-    Hexdim.Pipe.Data,
-    Hexdim.Pipe.Fetch,
-    Hexdim.Pipe.Branch,
-    Hexdim.Pipe.Memory,
-    Hexdim.Pipe.Immed,
-    Hexdim.Pipe.Arith
+    Hexdim.Datatype
+    Hexdim.Section
+    Hexdim.Section.Arith
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with Hexdim project in scope
