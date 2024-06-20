@@ -12,10 +12,12 @@ import Control.Lens
 import Control.Monad
 import Data.Maybe
 import Data.Monoid
+import qualified Data.List as L
 
 data BufferD = BufferD
   { _bArith :: Maybe (Buffer Arith)
   }
+  deriving (Show, Generic, Default)
 makeLenses ''BufferD
 
 fetch :: Monad m
@@ -30,20 +32,24 @@ decode :: Monad m
        => ForwardE
        -> Pipe m (BufferD, ForwardD)
 decode fwd = do
-  rb <- view regBank
-  let rb' = fromMaybe rb (getFirst (fwd ^. fReg))
-  ins <- view instr
+  f <- view cycle0
+  if not f
+    then do
+    rb <- view regBank
+    let rb' = fromMaybe rb (getFirst (fwd ^. fReg))
+    ins <- view instr
 
-  -- Maybe (Buffer s, ForwardD)
-  mbfArith <- maybe (pure Nothing) (fmap pure) $
-    (onDecode @Arith fwd <$> decoder @Arith rb' ins)
+    -- Maybe (Buffer s, ForwardD)
+    mbfArith <- maybe (pure Nothing) (fmap pure) $
+      (onDecode @Arith fwd <$> decoder @Arith rb' ins)
   
-  return ( BufferD
-           (fst <$> mbfArith)
-         , mconcat . catMaybes $
-           [ (snd <$> mbfArith)
-           ]
-         )
+    return ( BufferD
+             (fst <$> mbfArith)
+           , mconcat . catMaybes $
+             [ (snd <$> mbfArith)
+             ]
+           )
+    else return ( def, def )
 
 execute :: Monad m
         => BufferD
@@ -56,8 +62,12 @@ execute buf = do
   rb <- view regBank
   let replaceMaybe Nothing xs = xs
       replaceMaybe (Just (i, a)) xs = replace i a xs
-  let rb' = rb &
-        replaceMaybe (join (fst <$> mrfArith))
+  let rchange = mconcat . L.map First . L.map join $
+        [ fst <$> mrfArith
+        ]
+  let rb' = rb & replaceMaybe (getFirst rchange)
+  scribe regDst $ (fst <$> rchange)
+  scribe regW $ (snd <$> rchange)
   
   return . mconcat . catMaybes $
     [ Just (def & set fReg (pure rb'))

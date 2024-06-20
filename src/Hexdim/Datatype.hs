@@ -16,7 +16,8 @@ type Immed  = Unsigned 4
 type RegBank = Vec 4 Value
 
 data PipeR = PipeR
-  { _counter :: Addr
+  { _cycle0 :: Bool
+  , _counter :: Addr
   , _instr :: Instr
   , _regBank :: RegBank
   }

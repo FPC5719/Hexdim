@@ -96,6 +96,8 @@ library
     Hexdim.Section
     Hexdim.Section.Arith
     Hexdim.Pipeline
+    Hexdim.Instruction
+    Hexdim.Emulator
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with Hexdim project in scope

@@ -63,7 +63,7 @@ instance Section Arith where
               ans = (lo `shiftL` 4) + hi
           in (dst, ans, ans == 0, False)
         Comp ->
-          let ansf = ( (zeroExtend r1 :: Unsigned 9)
+          let ansf = ( (zeroExtend (complement r1) :: Unsigned 9)
                      + (1 :: Unsigned 9)
                      ) :: Unsigned 9
               ans = truncateB ansf :: Unsigned 8
