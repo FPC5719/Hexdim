@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Hexdim.Section where
 
@@ -7,17 +8,23 @@ import Hexdim.Datatype
 import Clash.Prelude
 import Control.Lens
 import Data.Default()
+import Data.Monoid
+import Data.Monoid.Generic
 
 data ForwardD = ForwardD
-  {
+  { _placeHolder :: First ()
   }
   deriving (Generic, Default)
+  deriving Semigroup via GenericSemigroup ForwardD
+  deriving Monoid via GenericMonoid ForwardD
 
 data ForwardE = ForwardE
-  { _fStatus :: Maybe (Bool, Bool) -- zero? overflow?
-  , _fReg :: Maybe RegBank
+  { _fStatus :: First (Bool, Bool) -- zero? overflow?
+  , _fReg :: First RegBank
   }
   deriving (Generic, Default)
+  deriving Semigroup via GenericSemigroup ForwardE
+  deriving Monoid via GenericMonoid ForwardE
 makeLenses ''ForwardE
 
 class Section s where
@@ -30,8 +37,8 @@ class Section s where
     -> Maybe (Decoded s)
   onDecode
     :: Monad m
-    => Decoded s
-    -> ForwardE
+    => ForwardE
+    -> Decoded s
     -> Pipe m ( Buffer s
               , ForwardD
               )

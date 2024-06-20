@@ -1,13 +1,13 @@
-module Hexdim.Section.Arith where
+module Hexdim.Section.Arith(Arith) where
 
 import Hexdim.Datatype
 import Hexdim.Section
 
-import Clash.Prelude hiding (Xor, at)
-import Control.Lens (scribe, (.~), (%~), (&))
+import Clash.Prelude hiding (Xor)
+import Control.Lens(scribe, set, (&))
 import Data.Default()
 
-data Arith = Arith
+data Arith
 
 data ArithInstr
   = Add  | Nand | Xor
@@ -42,7 +42,7 @@ instance Section Arith where
           _    -> (Send, rs !! r1, 0, r1)
     _ -> Nothing
   
-  onDecode (op, r1, r2, dst) fwd = pure $
+  onDecode fwd (op, r1, r2, dst) = pure $
     ( case op of
         Add ->
           let ansf = ( (zeroExtend r1 :: Unsigned 9)
@@ -77,8 +77,7 @@ instance Section Arith where
     , def )
   
   onExecute (dst, res, zr, ov) = do
-    scribe status $ pure (zr, ov)
+    scribe status . pure $ (zr, ov)
     pure $ ( Just (dst, res)
-           , def & fStatus .~ pure (zr, ov)
-                 & fReg %~ fmap (replace dst res)
+           , def & set fStatus (pure (zr, ov))
            )

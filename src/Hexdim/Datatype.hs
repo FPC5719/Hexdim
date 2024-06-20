@@ -16,11 +16,16 @@ type Immed  = Unsigned 4
 type RegBank = Vec 4 Value
 
 data PipeR = PipeR
-  {
+  { _counter :: Addr
+  , _instr :: Instr
+  , _regBank :: RegBank
   }
+makeLenses ''PipeR
 
 data PipeW = PipeW
-  { _status :: First (Bool, Bool)
+  { _counterW :: First Addr
+  , _instrA :: First Addr
+  , _status :: First (Bool, Bool)
   , _regDst :: First RegSel
   , _regW :: First Value
   }
