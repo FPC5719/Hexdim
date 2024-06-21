@@ -20,6 +20,8 @@ data Emulator = Emulator
   , _emuBufferD :: BufferD
   , _emuPipeW :: PipeW
   , _emuCycle0 :: Bool
+  , _emuMemory :: A.Array Addr Value
+  , _emuPeri :: (Addr, Value)
   }
 makeLenses ''Emulator
 
@@ -29,6 +31,7 @@ instance Show Emulator where
     L.++ "Status: " L.++ show (e ^. emuStatus) L.++ "\n"
     L.++ "BufferD: " L.++ show (e ^. emuBufferD) L.++ "\n"
     L.++ "PipeW: " L.++ show (e ^. emuPipeW) L.++ "\n"
+    L.++ "Peri: " L.++ show (e ^. emuPeri) L.++ "\n"
 
 withInstr :: [Instr] -> Emulator
 withInstr xs = if l > 256
@@ -42,6 +45,8 @@ withInstr xs = if l > 256
        , _emuBufferD = def
        , _emuPipeW = def
        , _emuCycle0 = True
+       , _emuMemory = A.listArray (0, 255) (L.replicate 256 0)
+       , _emuPeri = (0, 0)
        }
   where l = L.length xs
 
@@ -52,11 +57,14 @@ emulate e =
       replaceMaybe (Just (i, a)) xs = replace i a xs
       bufd = e ^. emuBufferD
       w = e ^. emuPipeW
+      mem = e ^. emuMemory
       r = PipeR
           { _cycle0 = e ^. emuCycle0
           , _counter = e ^. emuPC
           , _instr = (e ^. emuInstr) A.! (fromFirst 0 (w ^. instrA))
           , _regBank = e ^. emuReg
+          , _memoryR = mem A.! fromFirst 0 (w ^. memoryA)
+          , _periR = 0
           }
       (bufd', (), w') = runRWS (pipeM bufd) r ()
   in e { _emuInstr = e ^. emuInstr
@@ -71,4 +79,15 @@ emulate e =
        , _emuBufferD = bufd'
        , _emuPipeW = w'
        , _emuCycle0 = False
+       , _emuMemory =
+           case getFirst (w' ^. memoryA) of
+             Nothing -> mem
+             Just addr -> case getFirst (w' ^. memoryW) of
+               Nothing -> mem
+               Just val -> mem A.// [(addr, val)]
+       , _emuPeri = fromMaybe (e ^. emuPeri)
+                    ( (,)
+                      <$> getFirst (w' ^. periA)
+                      <*> getFirst (w' ^. periW)
+                    )
        }

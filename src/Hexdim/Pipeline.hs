@@ -2,8 +2,9 @@ module Hexdim.Pipeline where
 
 import Hexdim.Datatype
 import Hexdim.Section
-import Hexdim.Section.Arith
+import Hexdim.Section.Memory
 import Hexdim.Section.Immed
+import Hexdim.Section.Arith
 
 import Clash.Prelude
 import Control.Lens
@@ -16,7 +17,8 @@ import Data.Monoid
 import qualified Data.List as L
 
 data BufferD = BufferD
-  { _bImmed :: Maybe (Buffer Immed)
+  { _bMemory :: Maybe (Buffer Memory)
+  , _bImmed :: Maybe (Buffer Immed)
   , _bArith :: Maybe (Buffer Arith)
   }
   deriving (Show, Generic, Default)
@@ -42,19 +44,23 @@ decode fwd = do
     ins <- view instr
 
     -- Maybe (Buffer s, ForwardD)
+    mbfMemory <- maybe (pure Nothing) (fmap pure) $
+      (onDecode @Memory fwd <$> decoder @Memory rb' ins)
     mbfImmed <- maybe (pure Nothing) (fmap pure) $
       (onDecode @Immed fwd <$> decoder @Immed rb' ins)
     mbfArith <- maybe (pure Nothing) (fmap pure) $
       (onDecode @Arith fwd <$> decoder @Arith rb' ins)
   
-    return ( BufferD
-             (fst <$> mbfImmed)
-             (fst <$> mbfArith)
-           , mconcat . catMaybes $
-             [ snd <$> mbfImmed
-             , snd <$> mbfArith
-             ]
-           )
+    pure ( BufferD
+           (fst <$> mbfMemory)
+           (fst <$> mbfImmed)
+           (fst <$> mbfArith)
+         , mconcat . catMaybes $
+           [ snd <$> mbfMemory
+           , snd <$> mbfImmed
+           , snd <$> mbfArith
+           ]
+         )
     else return (def, def)
 
 execute :: Monad m
@@ -62,6 +68,8 @@ execute :: Monad m
         -> Pipe m ForwardE
 execute buf = do
   -- Maybe (Maybe (RegSel, Value), ForwardE)
+  mrfMemory <- maybe (pure Nothing) (fmap pure) $
+    (onExecute @Memory <$> (buf ^. bMemory))
   mrfImmed <- maybe (pure Nothing) (fmap pure) $
     (onExecute @Immed <$> (buf ^. bImmed))
   mrfArith <- maybe (pure Nothing) (fmap pure) $
@@ -71,15 +79,17 @@ execute buf = do
   let replaceMaybe Nothing xs = xs
       replaceMaybe (Just (i, a)) xs = replace i a xs
   let rchange = mconcat . L.map First . L.map join $
-        [ fst <$> mrfImmed
+        [ fst <$> mrfMemory
+        , fst <$> mrfImmed
         , fst <$> mrfArith
         ]
   let rb' = rb & replaceMaybe (getFirst rchange)
   scribe regDst $ (fst <$> rchange)
   scribe regW $ (snd <$> rchange)
   
-  return . mconcat . catMaybes $
+  pure . mconcat . catMaybes $
     [ Just (def & set fReg (pure rb'))
+    , snd <$> mrfMemory
     , snd <$> mrfImmed
     , snd <$> mrfArith
     ]
@@ -91,4 +101,4 @@ pipeM bufd = do
   fe <- execute bufd
   (bufd', fd) <- decode fe
   fetch fd
-  return bufd'
+  pure bufd'
