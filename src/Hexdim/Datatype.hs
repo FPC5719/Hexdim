@@ -11,7 +11,7 @@ type Value  = Unsigned 8
 type Instr  = Unsigned 8
 type Addr   = Unsigned 8
 type RegSel = Unsigned 2
-type Immed  = Unsigned 4
+type Imm    = Unsigned 4
 
 type RegBank = Vec 4 Value
 

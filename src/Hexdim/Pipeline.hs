@@ -3,6 +3,7 @@ module Hexdim.Pipeline where
 import Hexdim.Datatype
 import Hexdim.Section
 import Hexdim.Section.Arith
+import Hexdim.Section.Immed
 
 import Clash.Prelude
 import Control.Lens
@@ -15,7 +16,8 @@ import Data.Monoid
 import qualified Data.List as L
 
 data BufferD = BufferD
-  { _bArith :: Maybe (Buffer Arith)
+  { _bImmed :: Maybe (Buffer Immed)
+  , _bArith :: Maybe (Buffer Arith)
   }
   deriving (Show, Generic, Default)
 makeLenses ''BufferD
@@ -40,22 +42,28 @@ decode fwd = do
     ins <- view instr
 
     -- Maybe (Buffer s, ForwardD)
+    mbfImmed <- maybe (pure Nothing) (fmap pure) $
+      (onDecode @Immed fwd <$> decoder @Immed rb' ins)
     mbfArith <- maybe (pure Nothing) (fmap pure) $
       (onDecode @Arith fwd <$> decoder @Arith rb' ins)
   
     return ( BufferD
+             (fst <$> mbfImmed)
              (fst <$> mbfArith)
            , mconcat . catMaybes $
-             [ (snd <$> mbfArith)
+             [ snd <$> mbfImmed
+             , snd <$> mbfArith
              ]
            )
-    else return ( def, def )
+    else return (def, def)
 
 execute :: Monad m
         => BufferD
         -> Pipe m ForwardE
 execute buf = do
   -- Maybe (Maybe (RegSel, Value), ForwardE)
+  mrfImmed <- maybe (pure Nothing) (fmap pure) $
+    (onExecute @Immed <$> (buf ^. bImmed))
   mrfArith <- maybe (pure Nothing) (fmap pure) $
     (onExecute @Arith <$> (buf ^. bArith))
   
@@ -63,7 +71,8 @@ execute buf = do
   let replaceMaybe Nothing xs = xs
       replaceMaybe (Just (i, a)) xs = replace i a xs
   let rchange = mconcat . L.map First . L.map join $
-        [ fst <$> mrfArith
+        [ fst <$> mrfImmed
+        , fst <$> mrfArith
         ]
   let rb' = rb & replaceMaybe (getFirst rchange)
   scribe regDst $ (fst <$> rchange)
@@ -71,6 +80,7 @@ execute buf = do
   
   return . mconcat . catMaybes $
     [ Just (def & set fReg (pure rb'))
+    , snd <$> mrfImmed
     , snd <$> mrfArith
     ]
 

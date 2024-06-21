@@ -24,7 +24,7 @@ _load r1 r2 = merge4 1 r1 1 r2
 _out  r1 r2 = merge4 1 r1 2 r2
 _in   r1 r2 = merge4 1 r1 3 r2
 
-_setl :: RegSel -> Immed -> Instr
+_setl :: RegSel -> Imm -> Instr
 _setl r1 im = merge3 2 r1 im
 
 _add, _nand, _xor :: RegSel -> RegSel -> Instr
@@ -43,7 +43,7 @@ merge4 a b c d = bitCoerce $
   bitCoerce a ++# bitCoerce b ++#
   bitCoerce c ++# bitCoerce d
 
-merge3 :: RegSel -> RegSel -> Immed -> Instr
+merge3 :: RegSel -> RegSel -> Imm -> Instr
 merge3 a b c = bitCoerce $
   bitCoerce a ++# bitCoerce b ++#
   bitCoerce c

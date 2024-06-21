@@ -94,6 +94,7 @@ library
   exposed-modules:
     Hexdim.Datatype
     Hexdim.Section
+    Hexdim.Section.Immed
     Hexdim.Section.Arith
     Hexdim.Pipeline
     Hexdim.Instruction
