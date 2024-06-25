@@ -63,6 +63,7 @@ emulate e =
           , _counter = e ^. emuPC
           , _instr = (e ^. emuInstr) A.! (fromFirst 0 (w ^. instrA))
           , _regBank = e ^. emuReg
+          , _statusR = e ^. emuStatus
           , _memoryR = mem A.! fromFirst 0 (w ^. memoryA)
           , _periR = 0
           }
@@ -75,7 +76,7 @@ emulate e =
                      <*> getFirst (w' ^. regW)
                    )
                    (e ^. emuReg)
-       , _emuStatus = fromFirst (e ^. emuStatus) (w' ^. status)
+       , _emuStatus = fromFirst (e ^. emuStatus) (w' ^. statusW)
        , _emuBufferD = bufd'
        , _emuPipeW = w'
        , _emuCycle0 = False

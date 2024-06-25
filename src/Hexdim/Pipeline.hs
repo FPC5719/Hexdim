@@ -2,6 +2,7 @@ module Hexdim.Pipeline where
 
 import Hexdim.Datatype
 import Hexdim.Section
+import Hexdim.Section.Branch
 import Hexdim.Section.Memory
 import Hexdim.Section.Immed
 import Hexdim.Section.Arith
@@ -17,7 +18,8 @@ import Data.Monoid
 import qualified Data.List as L
 
 data BufferD = BufferD
-  { _bMemory :: Maybe (Buffer Memory)
+  { _bBranch :: Maybe (Buffer Branch)
+  , _bMemory :: Maybe (Buffer Memory)
   , _bImmed :: Maybe (Buffer Immed)
   , _bArith :: Maybe (Buffer Arith)
   }
@@ -29,8 +31,9 @@ fetch :: Monad m
       -> Pipe m ()
 fetch fwd = do
   pc <- view counter
-  scribe instrA . pure $ pc
-  scribe counterW . pure $ pc + 1
+  let pc' = fromMaybe pc $ getFirst (fwd ^. fTarget)
+  scribe instrA . pure $ pc'
+  scribe counterW . pure $ pc' + 1
 
 decode :: Monad m
        => ForwardE
@@ -44,6 +47,8 @@ decode fwd = do
     ins <- view instr
 
     -- Maybe (Buffer s, ForwardD)
+    mbfBranch <- maybe (pure Nothing) (fmap pure) $
+      (onDecode @Branch fwd <$> decoder @Branch rb' ins)
     mbfMemory <- maybe (pure Nothing) (fmap pure) $
       (onDecode @Memory fwd <$> decoder @Memory rb' ins)
     mbfImmed <- maybe (pure Nothing) (fmap pure) $
@@ -52,11 +57,13 @@ decode fwd = do
       (onDecode @Arith fwd <$> decoder @Arith rb' ins)
   
     pure ( BufferD
+           (fst <$> mbfBranch)
            (fst <$> mbfMemory)
            (fst <$> mbfImmed)
            (fst <$> mbfArith)
          , mconcat . catMaybes $
-           [ snd <$> mbfMemory
+           [ snd <$> mbfBranch
+           , snd <$> mbfMemory
            , snd <$> mbfImmed
            , snd <$> mbfArith
            ]
@@ -68,6 +75,8 @@ execute :: Monad m
         -> Pipe m ForwardE
 execute buf = do
   -- Maybe (Maybe (RegSel, Value), ForwardE)
+  mrfBranch <- maybe (pure Nothing) (fmap pure) $
+    (onExecute @Branch <$> (buf ^. bBranch))
   mrfMemory <- maybe (pure Nothing) (fmap pure) $
     (onExecute @Memory <$> (buf ^. bMemory))
   mrfImmed <- maybe (pure Nothing) (fmap pure) $
@@ -79,7 +88,8 @@ execute buf = do
   let replaceMaybe Nothing xs = xs
       replaceMaybe (Just (i, a)) xs = replace i a xs
   let rchange = mconcat . L.map First . L.map join $
-        [ fst <$> mrfMemory
+        [ fst <$> mrfBranch
+        , fst <$> mrfMemory
         , fst <$> mrfImmed
         , fst <$> mrfArith
         ]
@@ -89,6 +99,7 @@ execute buf = do
   
   pure . mconcat . catMaybes $
     [ Just (def & set fReg (pure rb'))
+    , snd <$> mrfBranch
     , snd <$> mrfMemory
     , snd <$> mrfImmed
     , snd <$> mrfArith

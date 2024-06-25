@@ -77,7 +77,7 @@ instance Section Arith where
     , def )
   
   onExecute (dst, res, zr, ov) = do
-    scribe status . pure $ (zr, ov)
+    scribe statusW . pure $ (zr, ov)
     pure $ ( Just (dst, res)
            , def & set fStatus (pure (zr, ov))
            )

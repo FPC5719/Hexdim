@@ -20,6 +20,7 @@ data PipeR = PipeR
   , _counter :: Addr
   , _instr   :: Instr
   , _regBank :: RegBank
+  , _statusR :: (Bool, Bool)
   , _memoryR :: Value
   , _periR   :: Value
   }
@@ -28,7 +29,7 @@ makeLenses ''PipeR
 data PipeW = PipeW
   { _counterW :: First Addr
   , _instrA   :: First Addr
-  , _status   :: First (Bool, Bool)
+  , _statusW  :: First (Bool, Bool)
   , _regDst   :: First RegSel
   , _regW     :: First Value
   , _memoryA  :: First Addr

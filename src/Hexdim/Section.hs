@@ -12,11 +12,12 @@ import Data.Monoid
 import Data.Monoid.Generic
 
 data ForwardD = ForwardD
-  { _placeHolder :: First ()
+  { _fTarget :: First Addr
   }
   deriving (Generic, Default)
   deriving Semigroup via GenericSemigroup ForwardD
   deriving Monoid via GenericMonoid ForwardD
+makeLenses ''ForwardD
 
 data ForwardE = ForwardE
   { _fStatus :: First (Bool, Bool) -- zero? overflow?
