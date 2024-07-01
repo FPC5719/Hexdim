@@ -24,6 +24,7 @@ data PipeR = PipeR
   , _memoryR :: Value
   , _periR   :: Value
   }
+  deriving (Generic, NFDataX)
 makeLenses ''PipeR
 
 data PipeW = PipeW
@@ -37,7 +38,7 @@ data PipeW = PipeW
   , _periA    :: First Addr
   , _periW    :: First Value
   }
-  deriving (Generic, Eq, Show, Default)
+  deriving (Generic, Show, Default, NFDataX)
   deriving Semigroup via GenericSemigroup PipeW
   deriving Monoid via GenericMonoid PipeW
 makeLenses ''PipeW

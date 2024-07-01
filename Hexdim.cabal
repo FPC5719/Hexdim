@@ -93,6 +93,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Hexdim.Datatype
+    Hexdim.Utility
     Hexdim.Section
     Hexdim.Section.Branch
     Hexdim.Section.Memory
@@ -101,6 +102,8 @@ library
     Hexdim.Pipeline
     Hexdim.Instruction
     Hexdim.Emulator
+    Hexdim.Circuit
+    Hexdim.Testbench
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with Hexdim project in scope

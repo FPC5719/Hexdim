@@ -12,6 +12,7 @@ data Arith
 data ArithInstr
   = Add  | Nand | Xor
   | Flip | Comp | Shr | Send
+  deriving (Generic, NFDataX)
 
 instance Section Arith where
   type Decoded Arith =

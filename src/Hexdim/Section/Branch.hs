@@ -11,6 +11,7 @@ import Data.Monoid
 data Branch
 
 data BranchInstr = Nop | Jmp | Jz | Jo
+  deriving (Generic, NFDataX)
 
 instance Section Branch where
   type Decoded Branch = (BranchInstr, Addr)

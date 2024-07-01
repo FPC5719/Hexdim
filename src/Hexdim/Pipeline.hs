@@ -23,7 +23,7 @@ data BufferD = BufferD
   , _bImmed :: Maybe (Buffer Immed)
   , _bArith :: Maybe (Buffer Arith)
   }
-  deriving (Show, Generic, Default)
+  deriving (Show, Generic, Default, NFDataX)
 makeLenses ''BufferD
 
 fetch :: Monad m

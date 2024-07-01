@@ -13,13 +13,13 @@ data MemoryInstr
   | Load  Addr RegSel
   | Out   Addr Value
   | In    Addr RegSel
-  deriving (Show)
+  deriving (Generic, NFDataX)
 
 data MemoryAccess
   = None
   | FromMem RegSel
   | FromPeri RegSel
-  deriving (Show)
+  deriving (Show, Generic, NFDataX)
 
 instance Section Memory where
   type Decoded Memory = MemoryInstr
