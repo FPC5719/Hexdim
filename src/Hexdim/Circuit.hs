@@ -1,4 +1,4 @@
-module Hexdim.Circuit(topEntity, board) where
+module Hexdim.Circuit(topEntity, board, pipe) where
 
 import Hexdim.Datatype
 import Hexdim.Utility
@@ -11,10 +11,12 @@ import Control.Monad.RWS
 import Data.Maybe
 import Data.Monoid()
 
+-- type Debug = ()
+
 pipe :: (HiddenClockResetEnable dom)
      => Signal dom PipeR
      -> Signal dom PipeW
-pipe = mealy def $ \bufd r ->
+pipe = flip mealy def $ \bufd r ->
   let (bufd', (), w) = runRWS (pipeM bufd) r ()
   in (bufd', w)
 
@@ -54,6 +56,7 @@ board :: HiddenClockResetEnable dom
          , Signal dom Bit
          , Signal dom Bit
          , Signal dom Bit
+         -- , Signal dom Debug -- Debug
          )
 board op val =
   let r = pure PipeR
@@ -89,6 +92,7 @@ board op val =
      , bitCoerce . (view _3) <$> resultSel
      , bitCoerce . (view _4) <$> resultSel
      , bitCoerce . (view _5) <$> resultSel
+     -- , w
      )
 
 topEntity
@@ -103,6 +107,7 @@ topEntity
      , "SelRW"  ::: Signal System Bit
      , "SelMP"  ::: Signal System Bit
      , "SelEn"  ::: Signal System Bit
+     -- , "Debug"  ::: Signal System Debug
      )
 topEntity = exposeClockResetEnable board
 makeTopEntity 'topEntity
