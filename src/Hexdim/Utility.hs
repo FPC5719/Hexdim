@@ -23,3 +23,6 @@ viewFirst :: Applicative f
           -> Lens' PipeW (First a)
           -> f (Maybe a)
 viewFirst w l = getFirst . view l <$> w
+
+fromFirst :: a -> First a -> a
+fromFirst x f = fromMaybe x $ getFirst f

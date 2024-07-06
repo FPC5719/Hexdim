@@ -26,6 +26,8 @@ data BufferD = BufferD
   deriving (Show, Generic, Default, NFDataX)
 makeLenses ''BufferD
 
+type PipeState = BufferD
+
 fetch :: Monad m
       => ForwardD
       -> Pipe m ()
@@ -106,8 +108,8 @@ execute buf = do
     ]
 
 pipeM :: Monad m
-      => BufferD
-      -> Pipe m BufferD
+      => PipeState
+      -> Pipe m PipeState
 pipeM bufd = do
   fe <- execute bufd
   (bufd', fd) <- decode fe
