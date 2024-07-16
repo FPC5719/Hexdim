@@ -7,6 +7,7 @@ import Hexdim.Pipeline
 import Clash.Prelude
 import Control.Monad.RWS
 import Control.Lens(makeLenses, (^.))
+import qualified Data.List as L
 
 data CoreS = CoreS
   { _coreCycle0 :: Bool
@@ -16,6 +17,12 @@ data CoreS = CoreS
   , _corePipeS  :: PipeState
   }
 makeLenses ''CoreS
+
+instance Show CoreS where
+  show s = "CoreS:\n"
+    L.++ "  Reg: " L.++ show (s ^. coreReg) L.++ "\n"
+    L.++ "  Status: " L.++ show (s ^. coreStatus) L.++ "\n"
+    L.++ "  PC: " L.++ show (s ^. corePC) L.++ "\n"
 
 instance Default CoreS where
   def = CoreS
@@ -41,6 +48,16 @@ data CoreW = CoreW
   , _coreSelEn  :: Bool -- False: Ignore the above two
   }
 makeLenses ''CoreW
+
+instance Default CoreW where
+  def = CoreW
+    { _coreInstrA = 0
+    , _coreDataA  = 0
+    , _coreDataW  = 0
+    , _coreSelRW  = False
+    , _coreSelMP  = False
+    , _coreSelEn  = False
+    }
 
 core :: CoreS -> CoreR -> (CoreS, CoreW)
 core cs cr = (cs', cw)
