@@ -1,51 +1,11 @@
-module Hexdim.Circuit(topEntity, board, pipe) where
+module Hexdim.Circuit where
 
 import Hexdim.Datatype
-import Hexdim.Utility
-import Hexdim.Pipeline
+import Hexdim.Core
 
 import Clash.Prelude
 import Clash.Annotations.TH
-import Control.Lens(view, _1, _2, _3, _4, _5)
-import Control.Monad.RWS
-import Data.Maybe
-import Data.Monoid()
-
--- type Debug = ()
-
-pipe :: (HiddenClockResetEnable dom)
-     => Signal dom PipeR
-     -> Signal dom PipeW
-pipe = flip mealy def $ \bufd r ->
-  let (bufd', (), w) = runRWS (pipeM bufd) r ()
-  in (bufd', w)
-
-regCycle0 :: HiddenClockResetEnable dom
-          => Signal dom Bool
-regCycle0 = register False (pure True)
-
-regPC :: HiddenClockResetEnable dom
-      => Signal dom PipeW
-      -> Signal dom Addr
-regPC w = regMaybe 0 (viewFirst w counterW)
-
-regStatus :: HiddenClockResetEnable dom
-          => Signal dom PipeW
-          -> Signal dom (Bool, Bool)
-regStatus w = regMaybe (False, False) (viewFirst w statusW)
-
-regGeneral :: HiddenClockResetEnable dom
-           => Signal dom PipeW
-           -> Signal dom RegBank
-regGeneral w = inner
-  where inner = register (0 :> 0 :> 0 :> 0 :> Nil) rnew
-        rnew = pure replaceMaybe
-               <*> ( pushTuple <$> pushTuple
-                     ( viewFirst w regDst
-                     , viewFirst w regW
-                     )
-                   )
-               <*> inner
+import Control.Lens(view)
 
 board :: HiddenClockResetEnable dom
       =>   Signal dom Instr
@@ -56,44 +16,25 @@ board :: HiddenClockResetEnable dom
          , Signal dom Bit
          , Signal dom Bit
          , Signal dom Bit
-         -- , Signal dom Debug -- Debug
          )
-board op val =
-  let r = pure PipeR
-        <*> regCycle0
-        <*> regPC w
-        <*> op
-        <*> regGeneral w
-        <*> regStatus w
-        <*> val
-        <*> val
-      w = pipe r
-      resultSel =
-        pure (\ma mw pa pw -> case (ma, mw) of
-                 (Nothing, _) -> case (pa, pw) of
-                   (Nothing, _) ->
-                     (0, 0, False, False, False)
-                   (Just addr, Nothing) ->
-                     (addr, 0, False, True, True)
-                   (Just addr, Just d) ->
-                     (addr, d, True, True, True)
-                 (Just addr, Nothing) ->
-                   (addr, 0, False, False, True)
-                 (Just addr, Just d) ->
-                   (addr, d, True, False, True)
-             )
-        <*> viewFirst w memoryA
-        <*> viewFirst w memoryW
-        <*> viewFirst w periA
-        <*> viewFirst w periW
-  in ( bitCoerce . fromMaybe 0 <$> viewFirst w instrA
-     , bitCoerce . (view _1) <$> resultSel
-     , bitCoerce . (view _2) <$> resultSel
-     , bitCoerce . (view _3) <$> resultSel
-     , bitCoerce . (view _4) <$> resultSel
-     , bitCoerce . (view _5) <$> resultSel
-     -- , w
-     )
+board op val = unwrap $ mealy core def cr
+  where cr = pure CoreR <*> op <*> val
+        unwrap :: Functor f
+               =>   f CoreW
+               -> ( f Addr
+                  , f Addr
+                  , f Value
+                  , f Bit
+                  , f Bit
+                  , f Bit
+                  )
+        unwrap cw = ( view coreInstrA <$> cw
+                    , view coreDataA  <$> cw
+                    , view coreDataW  <$> cw
+                    , bitCoerce . view coreSelRW <$> cw
+                    , bitCoerce . view coreSelMP <$> cw
+                    , bitCoerce . view coreSelEn <$> cw
+                    )
 
 topEntity
   ::   "CLK"    ::: Clock System
@@ -107,7 +48,6 @@ topEntity
      , "SelRW"  ::: Signal System Bit
      , "SelMP"  ::: Signal System Bit
      , "SelEn"  ::: Signal System Bit
-     -- , "Debug"  ::: Signal System Debug
      )
 topEntity = exposeClockResetEnable board
 makeTopEntity 'topEntity

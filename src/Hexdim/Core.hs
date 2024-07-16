@@ -16,6 +16,7 @@ data CoreS = CoreS
   , _corePC     :: Addr
   , _corePipeS  :: PipeState
   }
+  deriving (Generic, NFDataX)
 makeLenses ''CoreS
 
 instance Show CoreS where
