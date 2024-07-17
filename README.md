@@ -10,25 +10,24 @@ Features:
 - Simple enough to implement, while complex enough to perform several tasks.
 - Staged pipeline, easily composable in monadic style.
 - Hierarchical code structure, separated by functions instead of stages.
-- Extensive use of `Lens`.
 - Code reuse with different compiler backends: GHC and Clash.
 - Easy DiffTest.
 
 ## Build steps
 
-To build the project, run:
+Build the project:
 
 ```
 cabal build
 ```
 
-To open REPL, run:
+Start REPL:
 
 ```
 cabal run clashi
 ```
 
-To export Verilog, run:
+Export Verilog:
 
 ```
 cabal run clash -- Hexdim.Circuit --verilog
@@ -57,3 +56,27 @@ cabal run clash -- Hexdim.Circuit --verilog
 | SHR  | R1 = R1 >> 1 (Overflow)             | 11  | R1  | 11  | 10  |
 | SEND | R1 = R1                             | 11  | R1  | 11  | 11  |
 
+The instructions fall into 4 categories (or `Section`s in the source code),
+indecated by bit[7-6].
+
+- `00`: Branch
+- `01`: Memory
+- `10`: Immediate value
+- `11`: Arithmetic
+
+### Pipeline structure
+
+Hexdim is a staged CPU with `fetch`, `decode` and `execute`.
+
+The behavior of each instruction in every section is implemented under
+the typeclass `Section`.
+
+- `fetch`: A universal implementation for all sections.
+- `decode`: Each section should implement `decoder` and `onDecode`.
+In this stage, register access is provided.
+- `execute`: Each section should implement `onExecute`, which has a result
+for writing back to registers.
+
+The pipeline is assembled in `Pipeline` where the three stages are defined, 
+and automatically handles all data forwards.
+The result is a monadic pipeline `pipeM` that has an underlying RWST monad.

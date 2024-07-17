@@ -1,11 +1,17 @@
 module Hexdim.Pipeline where
 
+-- If you decide to add a new section,
+-- modify the following 8 places.
+-- (Perhaps it can be done with TH)
+
 import Hexdim.Datatype
+import Hexdim.Utility
 import Hexdim.Section
 import Hexdim.Section.Branch
 import Hexdim.Section.Memory
 import Hexdim.Section.Immed
 import Hexdim.Section.Arith
+-- import Hexdim.Section.<...> -- (1)
 
 import Clash.Prelude
 import Control.Lens
@@ -20,13 +26,14 @@ import qualified Data.List as L
 data BufferD = BufferD
   { _bBranch :: Maybe (Buffer Branch)
   , _bMemory :: Maybe (Buffer Memory)
-  , _bImmed :: Maybe (Buffer Immed)
-  , _bArith :: Maybe (Buffer Arith)
+  , _bImmed  :: Maybe (Buffer Immed)
+  , _bArith  :: Maybe (Buffer Arith)
+  -- ,_b<...> :: Maybe (Buffer <...>) -- (2)
   }
   deriving (Show, Generic, Default, NFDataX)
 makeLenses ''BufferD
 
-type PipeState = BufferD
+type PipeS = BufferD
 
 fetch :: Monad m
       => ForwardD
@@ -57,20 +64,24 @@ decode fwd = do
       (onDecode @Immed fwd <$> decoder @Immed rb' ins)
     mbfArith <- maybe (pure Nothing) (fmap pure) $
       (onDecode @Arith fwd <$> decoder @Arith rb' ins)
+    -- mbf<...> <- maybe (pure Nothing) (fmap pure) $
+    --   (onDecode @<...> fwd <$> decoder @<...> rb' ins) -- (3)
   
     pure ( BufferD
            (fst <$> mbfBranch)
            (fst <$> mbfMemory)
            (fst <$> mbfImmed)
            (fst <$> mbfArith)
+           -- (fst <$> mbf<...>) -- (4)
          , mconcat . catMaybes $
            [ snd <$> mbfBranch
            , snd <$> mbfMemory
            , snd <$> mbfImmed
            , snd <$> mbfArith
+           -- , snd <$> mbf<...> -- (5)
            ]
          )
-    else return (def, def)
+    else pure (def, def)
 
 execute :: Monad m
         => BufferD
@@ -85,15 +96,16 @@ execute buf = do
     (onExecute @Immed <$> (buf ^. bImmed))
   mrfArith <- maybe (pure Nothing) (fmap pure) $
     (onExecute @Arith <$> (buf ^. bArith))
+  -- mrf<...> <- maybe (pure Nothing) (fmap pure) $
+  --   (onExecute @<...> <$> (buf ^. b<...>)) -- (6)
   
   rb <- view regBank
-  let replaceMaybe Nothing xs = xs
-      replaceMaybe (Just (i, a)) xs = replace i a xs
   let rchange = mconcat . L.map First . L.map join $
         [ fst <$> mrfBranch
         , fst <$> mrfMemory
         , fst <$> mrfImmed
         , fst <$> mrfArith
+        -- , fst <$> mrf<...> -- (7)
         ]
   let rb' = rb & replaceMaybe (getFirst rchange)
   scribe regDst $ (fst <$> rchange)
@@ -105,11 +117,12 @@ execute buf = do
     , snd <$> mrfMemory
     , snd <$> mrfImmed
     , snd <$> mrfArith
+    -- , snd <$> mrf<...> -- (8)
     ]
 
 pipeM :: Monad m
-      => PipeState
-      -> Pipe m PipeState
+      => PipeS
+      -> Pipe m PipeS
 pipeM bufd = do
   fe <- execute bufd
   (bufd', fd) <- decode fe

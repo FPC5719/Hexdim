@@ -3,7 +3,7 @@
 module Hexdim.Datatype where
 
 import Clash.Prelude
-import Control.Lens
+import Control.Lens(makeLenses)
 import Control.Monad.RWS
 import Data.Monoid.Generic
 

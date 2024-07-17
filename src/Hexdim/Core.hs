@@ -14,7 +14,7 @@ data CoreS = CoreS
   , _coreReg    :: RegBank
   , _coreStatus :: (Bool, Bool)
   , _corePC     :: Addr
-  , _corePipeS  :: PipeState
+  , _corePipeS  :: PipeS
   }
   deriving (Generic, NFDataX)
 makeLenses ''CoreS
@@ -98,9 +98,14 @@ core cs cr = (cs', cw)
                  , getFirst (pw ^. periA)
                  , getFirst (pw ^. periW)
                  )
-            of (Nothing, _, Nothing, _) -> (0, 0, False, False, False)
-               (Nothing, _, Just a, Nothing) -> (a, 0, False, True, True)
-               (Nothing, _, Just a, Just d) -> (a, d, True, True, True)
-               (Just a, Nothing, _, _) -> (a, 0, False, False, True)
-               (Just a, Just d, _, _) -> (a, d, True, False, True)
+            of (Nothing, _      , Nothing, _      ) ->
+                 (0, 0, False, False, False)
+               (Nothing, _      , Just a , Nothing) ->
+                 (a, 0, False, True , True )
+               (Nothing, _      , Just a , Just d ) ->
+                 (a, d, True , True , True )
+               (Just a , Nothing, _      , _      ) ->
+                 (a, 0, False, False, True )
+               (Just a , Just d , _      , _      ) ->
+                 (a, d, True , False, True )
 
