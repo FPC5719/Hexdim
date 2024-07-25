@@ -1,12 +1,11 @@
 module Hexdim.Section.Branch(Branch) where
 
 import Hexdim.Datatype
+import Hexdim.Utility
 import Hexdim.Section
 
 import Clash.Prelude
 import Control.Lens(view, set, (^.), (&))
-import Data.Maybe
-import Data.Monoid
 
 data Branch
 
@@ -30,7 +29,7 @@ instance Section Branch where
 
   onDecode fwd (op, dst) = do
     f <- view statusR
-    let (fz, fo) = fromMaybe f $ getFirst (fwd ^. fStatus)
+    let (fz, fo) = fromFirst f (fwd ^. fStatus)
     let jmp = def & set fTarget (pure dst)
     case op of
       Nop -> pure ((), def)

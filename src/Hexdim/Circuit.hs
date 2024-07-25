@@ -19,15 +19,6 @@ board :: HiddenClockResetEnable dom
          )
 board op val = unwrap $ mealy core def cr
   where cr = pure CoreR <*> op <*> val
-        unwrap :: Functor f
-               =>   f CoreW
-               -> ( f Addr
-                  , f Addr
-                  , f Value
-                  , f Bit
-                  , f Bit
-                  , f Bit
-                  )
         unwrap cw = ( view coreInstrA <$> cw
                     , view coreDataA  <$> cw
                     , view coreDataW  <$> cw
