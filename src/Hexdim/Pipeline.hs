@@ -28,7 +28,7 @@ data BufferD = BufferD
   , _bMemory :: Maybe (Buffer Memory)
   , _bImmed  :: Maybe (Buffer Immed)
   , _bArith  :: Maybe (Buffer Arith)
-  -- ,_b<...> :: Maybe (Buffer <...>) -- (2)
+  -- , _b<...> :: Maybe (Buffer <...>) -- (2)
   }
   deriving (Show, Generic, Default, NFDataX)
 makeLenses ''BufferD
@@ -39,10 +39,18 @@ fetch :: Monad m
       => ForwardD
       -> Pipe m ()
 fetch fwd = do
-  pc <- view counter
-  let pc' = fromMaybe pc $ getFirst (fwd ^. fTarget)
-  scribe instrA . pure $ pc'
-  scribe counterW . pure $ pc' + 1
+  f <- view cycle0
+  if not f
+    then do
+    pc <- view counter
+    case getFirst (fwd ^. fTarget) of
+      Nothing -> do
+        scribe instrA . pure $ pc
+        scribe counterW . pure $ pc + 1
+      Just target -> do
+        scribe instrA . pure $ target
+        scribe counterW . pure $ target
+    else scribe instrA . pure $ 0
 
 decode :: Monad m
        => ForwardE
@@ -52,7 +60,7 @@ decode fwd = do
   if not f
     then do
     rb <- view regBank
-    let rb' = fromMaybe rb (getFirst (fwd ^. fReg))
+    let rb' = fromFirst rb (fwd ^. fReg)
     ins <- view instr
 
     -- Maybe (Buffer s, ForwardD)

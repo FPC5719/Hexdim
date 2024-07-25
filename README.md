@@ -27,10 +27,12 @@ Start REPL:
 cabal run clashi
 ```
 
-Export Verilog:
+Export Verilog and run Verilator:
 
 ```
 cabal run clash -- Hexdim.Circuit --verilog
+verilator --cc --exe --build -j ./verilog/Hexdim.Circuit.topEntity/topEntity.v ./verilator/test.cpp -Wno-WIDTHTRUNC
+./obj_dir/VtopEntity
 ```
 
 ## Design details

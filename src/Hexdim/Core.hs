@@ -71,7 +71,8 @@ core cs cr = (cs', cw)
                           )
                           (cs ^. coreReg)
           , _coreStatus = fromFirst (cs ^. coreStatus) (pw ^. statusW)
-          , _corePC     = fromFirst (cs ^. corePC + 1) (pw ^. counterW)
+          , _corePC     = fromFirst (cs ^. corePC) (pw ^. counterW)
+                          -- `counterW` should never be `Nothing`
           , _corePipeS  = ps'
           }
         cw = CoreW

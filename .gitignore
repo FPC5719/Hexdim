@@ -42,3 +42,4 @@ cabal.config
 /vhdl
 /verilog
 /systemverilog
+/obj_dir
