@@ -41,22 +41,24 @@ emulate e = Emulator
   , _emuMemory =
       case ( cw ^. coreSelRW
            , cw ^. coreSelMP
-           , cw ^. coreSelEn)
+           , cw ^. coreSelEn
+           )
       of (True, False, True) ->
-           (e ^. emuMemory) A.// [ (cw ^. coreDataA
+           (e ^. emuMemory) A.// [ ( cw ^. coreDataA
                                    , cw ^. coreDataW
                                    )
                                  ]
          _ -> e ^. emuMemory
   , _emuPeri =
-    case ( cw ^. coreSelRW
-         , cw ^. coreSelMP
-         , cw ^. coreSelEn)
-    of (True, True, True) ->
-         Just ( cw ^. coreDataA
-              , cw ^. coreDataW
-              )
-       _ -> Nothing
+      case ( cw ^. coreSelRW
+           , cw ^. coreSelMP
+           , cw ^. coreSelEn
+           )
+      of (True, True, True) ->
+           Just ( cw ^. coreDataA
+                , cw ^. coreDataW
+                )
+         _ -> Nothing
   , _emuCoreS = cs'
   , _emuLastW = cw'
   }
@@ -68,7 +70,8 @@ emulate e = Emulator
                , _coreDataR =
                    case ( cw ^. coreSelRW
                         , cw ^. coreSelMP
-                        , cw ^. coreSelEn)
+                        , cw ^. coreSelEn
+                        )
                    of (_, _, False) -> 0
                       (True, _, True) -> 0
                       (False, False, True) ->

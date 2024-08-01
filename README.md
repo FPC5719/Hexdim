@@ -30,9 +30,9 @@ cabal run clashi
 Export Verilog and run Verilator:
 
 ```
-cabal run clash -- Hexdim.Circuit --verilog
-verilator --cc --exe --build -j ./verilog/Hexdim.Circuit.topEntity/topEntity.v ./verilator/test.cpp -Wno-WIDTHTRUNC
-./obj_dir/VtopEntity
+cabal run clash -- Hexdim.Test --verilog
+verilator --cc --exe --build -j ./verilog/Hexdim.Test.testTop/testTop.v ./verilator/test.cpp -Wno-WIDTHTRUNC
+./obj_dir/VtestTop
 ```
 
 ## Design details

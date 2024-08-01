@@ -27,6 +27,7 @@ board op val = unwrap $ mealy core def cr
                     , bitCoerce . view coreSelEn <$> cw
                     )
 
+
 topEntity
   ::   "CLK"    ::: Clock System
   ->   "RST"    ::: Reset System
