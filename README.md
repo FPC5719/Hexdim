@@ -124,7 +124,7 @@ The project can run in 3 different levels:
 
 Let `instr` be the program. In REPL, run:
 
-```
+``` haskell
 import Hexdim.Emulator
 withInstr instr
 emulate it
@@ -136,7 +136,7 @@ Step with `emulate it` and the result would be printed.
 
 First export the program to `ROMFILE`. In REPL, type:
 
-```
+``` haskell
 import Hexdim.Test
 import Clash.Prelude
 import Clash.Prelude.Testbench
@@ -158,7 +158,7 @@ make test
 
 ---
 
-In addition, the project can be integrated with NJU VBoard.
+In addition, the project can be integrated with [NJU VBoard](https://github.com/NJU-ProjectN/nvboard).
 
 First export the program to `ROMFILE`, and then:
 
