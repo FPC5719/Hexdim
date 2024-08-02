@@ -43,3 +43,4 @@ cabal.config
 /verilog
 /systemverilog
 /obj_dir
+/verilator/obj_dir
