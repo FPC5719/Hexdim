@@ -49,7 +49,7 @@ fetch fwd = do
         scribe counterW . pure $ pc + 1
       Just target -> do
         scribe instrA . pure $ target
-        scribe counterW . pure $ target
+        scribe counterW . pure $ target + 1
     else scribe instrA . pure $ 0
 
 decode :: Monad m
