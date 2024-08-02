@@ -44,3 +44,5 @@ cabal.config
 /systemverilog
 /obj_dir
 /verilator/obj_dir
+ROMFILE
+/verilator/ROMFILE

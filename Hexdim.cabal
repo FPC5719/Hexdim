@@ -103,6 +103,7 @@ library
     Hexdim.Pipeline
     Hexdim.Core
     Hexdim.Instruction
+    Hexdim.ROM
     Hexdim.Emulator
     Hexdim.Circuit
     Hexdim.Test

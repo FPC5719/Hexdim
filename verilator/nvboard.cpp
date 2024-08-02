@@ -1,8 +1,11 @@
-#include <cstdlib>
-
+#include <ctime>
 #include <nvboard.h>
-
 #include "VnvTop.h"
+
+void delay(int t) {
+  clock_t start = clock();
+  while (clock() < start + t) { }
+}
 
 int main() {
   VnvTop *top = new VnvTop;
@@ -26,16 +29,13 @@ int main() {
   
   while(true) {
     nvboard_update();
-    
+    delay(200);
     top->CLK = !top->CLK;
     top->eval();
   }
 
   top->final();
-
   delete top;
-
   nvboard_quit();
-
   return 0;
 }

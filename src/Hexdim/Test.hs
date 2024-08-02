@@ -1,13 +1,11 @@
 module Hexdim.Test where
 
 import Hexdim.Datatype
+import Hexdim.ROM
 import Hexdim.Circuit
 
 import Clash.Prelude
 import Clash.Annotations.TH
-
-romPath :: String
-romPath = "test.rom"
 
 testBoard :: HiddenClockResetEnable dom
           => Signal dom Value

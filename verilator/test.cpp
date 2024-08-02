@@ -1,10 +1,7 @@
-#include <cstdlib>
-
 #include <verilated.h>
-
 #include "VtestTop.h"
 
-const int TIME = 50;
+const int TIME = 1000;
 
 int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
@@ -29,14 +26,11 @@ int main(int argc, char **argv) {
       VL_PRINTF("cycle %d: %d\n", cnt, top->OUT);
       cnt++;
     }
-    
     top->CLK = !top->CLK;
     top->eval();
   }
 
   top->final();
-
   delete top;
-
-  return EXIT_SUCCESS;
+  return 0;
 }
